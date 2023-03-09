@@ -107,8 +107,8 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		}
 
 		// the client came back with a receipt
-		cameBack := func(r Receipt) {
-			fmt.Println("cameBack")
+		fastForward := func(r Receipt) {
+			fmt.Println("fastForward")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(remainder))
 
 			// get the previously sent payload from storage
@@ -129,7 +129,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			} else { // it's not in the inventory either.. must be a new system.
 				newSystem(receipt)
 			}
-		} else { // at least part of its history is in the index
+		} else { // at least part of the system's history is in the index
 			if len(remainder) == 0 { // we found the entire key
 				if len(pos.Children) == 0 { // the node in the trie has no children, so it's an exact match
 					if time.Since(pos.Value).Seconds() < ing.EnoughSeconds { // it hasn't been long enough since we saw it last..
@@ -141,10 +141,10 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 				} else { // we found the key, but it's already been extended. Either a backup or some other clone is trying to check in.
 					comeBack(receipt)
 				}
-			} else { // not all key components are found
-				if len(pos.Children) == 0 { // the system was previously given a new id and told to come back
+			} else { // not all key components are found. the client was told to come back.
+				if len(pos.Children) == 0 { // we can just "fast-forward"
 					pos.Extend(remainder, now)
-					cameBack(req.Receipt)
+					fastForward(req.Receipt)
 				} else { // we found a common prefix but have diverged - this is a clone.
 					pos.Extend(remainder, now)
 					newSystem(req.Receipt)
