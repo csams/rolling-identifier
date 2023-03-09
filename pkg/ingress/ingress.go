@@ -110,8 +110,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// none of the system's history is in the index (the longest common prefix was empty)
-		if pos == ing.Index {
+		if pos == ing.Index { // none of the system's history is in the index (the longest common prefix was empty)
 			_, found := ing.Inventory.Get(k)
 			pos.Extend(remainder, now)
 			if found { // the key is in inventory, though. Freshen the index and do a routine checkin.
