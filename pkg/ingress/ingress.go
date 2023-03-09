@@ -67,34 +67,34 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 	resp.Error = ing.Index.WithLongestPrefix(k, func(comps []trie.Key, pos IndexNode) error {
 		var err error
 
-        // we need to make a new system
+		// we need to make a new system
 		newSystem := func() {
-            fmt.Println("newSystem")
+			fmt.Println("newSystem")
 			ing.Inventory.Create(k, req.Payload)
 			ing.S3.Put(receipt, req.Payload)
 			ing.AnnounceNewArchive(receipt)
 		}
 
-        // regular old checkin
+		// regular old checkin
 		checkIn := func() {
-            fmt.Println("checkIn")
+			fmt.Println("checkIn")
 			ing.Inventory.Update(k, k, req.Payload)
 			ing.S3.Put(receipt, req.Payload)
 			ing.AnnounceNewArchive(receipt)
 		}
 
-        // if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to post it again
+		// if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to post it again
 		comeBack := func() {
-            fmt.Println("comeBack")
+			fmt.Println("comeBack")
 			ing.S3.Put(receipt, req.Payload)
 
 			resp.ComeBack = true
 			resp.Key = trie.ExtendKey(k, receipt) // just reusing the storage receipt - could be anything unique
 		}
 
-        // the client came back with a receipt
+		// the client came back with a receipt
 		cameBack := func() {
-            fmt.Println("cameBack")
+			fmt.Println("cameBack")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(comps))
 			payload, found, e := ing.S3.Get(req.Receipt)
 			err = e

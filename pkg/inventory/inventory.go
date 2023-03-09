@@ -11,7 +11,7 @@ type Key = trie.Key
 
 // System is a standin for anything we want to track
 type System struct {
-	Id   int  // this is actually the stable primary key other databases would depend on
+	Id   int // this is actually the stable primary key other databases would depend on
 	Data int
 }
 
@@ -39,8 +39,8 @@ func (inv *MemoryInventory) Create(k Key, sys System) error {
 	inv.Lock()
 	defer inv.Unlock()
 	if _, found := inv.Store[k]; !found {
-        sys.Id = inv.Counter
-        inv.Counter += 1
+		sys.Id = inv.Counter
+		inv.Counter += 1
 		inv.Store[k] = sys
 		return nil
 	}
@@ -51,9 +51,9 @@ func (inv *MemoryInventory) Update(prev, cur Key, sys System) error {
 	inv.Lock()
 	defer inv.Unlock()
 	if obj, found := inv.Store[prev]; found {
-        delete(inv.Store, prev)
+		delete(inv.Store, prev)
 		inv.Store[cur] = sys
-        sys.Id = obj.Id
+		sys.Id = obj.Id
 		return nil
 	}
 	return fmt.Errorf("Key doesn't exist: %s", prev)
