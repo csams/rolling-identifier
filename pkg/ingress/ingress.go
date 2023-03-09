@@ -68,40 +68,46 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		var err error
 
 		// we need to make a new system
-		newSystem := func() {
+		newSystem := func(r Receipt) {
 			fmt.Println("newSystem")
 			ing.Inventory.Create(k, req.Payload)
-			ing.S3.Put(receipt, req.Payload)
-			ing.AnnounceNewArchive(receipt)
+			ing.S3.Put(r, req.Payload)
+			ing.AnnounceNewArchive(r)
+
+			resp.Receipt = r
 		}
 
 		// regular old checkin
-		checkIn := func() {
+		checkIn := func(r Receipt) {
 			fmt.Println("checkIn")
 			ing.Inventory.Update(k, k, req.Payload)
-			ing.S3.Put(receipt, req.Payload)
-			ing.AnnounceNewArchive(receipt)
+			ing.S3.Put(r, req.Payload)
+			ing.AnnounceNewArchive(r)
+
+			resp.Receipt = r
 		}
 
 		// if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to post it again
-		comeBack := func() {
+		comeBack := func(r Receipt) {
 			fmt.Println("comeBack")
-			ing.S3.Put(receipt, req.Payload)
+			ing.S3.Put(r, req.Payload)
 
 			resp.ComeBack = true
-			resp.Key = trie.ExtendKey(k, receipt) // just reusing the storage receipt - could be anything unique
+			resp.Key = trie.ExtendKey(k, r) // just reusing the storage receipt - could be anything unique
+			resp.Receipt = r
 		}
 
 		// the client came back with a receipt
-		cameBack := func() {
+		cameBack := func(r Receipt) {
 			fmt.Println("cameBack")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(comps))
-			payload, found, e := ing.S3.Get(req.Receipt)
+			payload, found, e := ing.S3.Get(r)
 			err = e
 			if found {
 				ing.Inventory.Update(prevId, k, payload)
-				ing.AnnounceNewArchive(receipt)
+				ing.AnnounceNewArchive(r)
 			}
+			resp.Receipt = r
 		}
 
 		// none of the system's history is in the index (the longest common prefix was empty)
@@ -109,29 +115,28 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			_, found := ing.Inventory.Get(k)
 			pos.Extend(comps, now)
 			if found { // the key is in inventory, though. Freshen the index and do a routine checkin.
-				checkIn()
+				checkIn(receipt)
 			} else { // it's not in the inventory either.. must be a new system.
-				newSystem()
+				newSystem(receipt)
 			}
 		} else { // at least part of its history is in the index
 			if len(comps) == 0 { // we found the entire key
 				if len(pos.Children) == 0 { // the node in the trie has no children, so it's an exact match
 					if time.Since(pos.Value).Seconds() < ing.EnoughSeconds { // it hasn't been long enough since we saw it last..
-						comeBack()
+						comeBack(receipt)
 					} else { // it's been long enough. Assume it's a routine check-in.
 						pos.Value = now
-						checkIn()
+						checkIn(receipt)
 					}
 				} else { // we found the key, but it's already been extended. Either a backup or some other clone is trying to check in.
-					comeBack()
+					comeBack(receipt)
 				}
 			} else { // not all key components are found
+				pos.Extend(comps, now)
 				if len(pos.Children) == 0 { // the system was previously given a new id and told to come back
-					pos.Extend(comps, now)
-					cameBack()
+					cameBack(req.Receipt)
 				} else { // we found a common prefix but have diverged - this is a clone.
-					pos.Extend(comps, now)
-					newSystem()
+					newSystem(req.Receipt)
 				}
 			}
 		}
