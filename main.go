@@ -49,4 +49,19 @@ func main() {
 	resp = ing.CheckIn(resp.Key, ingress.Request{Payload: inventory.System{}})
 	fmt.Printf("%+v\n\n", resp)
 	// fmt.Printf("%s\n", index)
+
+	// try to check back in as 1 again
+	resp = ing.CheckIn("1", ingress.Request{Payload: inventory.System{}})
+	fmt.Printf("%+v\n\n", resp)
+	// fmt.Printf("%s\n", index)
+
+	// we should be told to come back
+	if !resp.ComeBack {
+		fmt.Println("Expected a come back message")
+		return
+	}
+
+	// this should create a new system
+	resp = ing.CheckIn(resp.Key, ingress.Request{Receipt: resp.Receipt})
+	fmt.Printf("%+v\n\n", resp)
 }

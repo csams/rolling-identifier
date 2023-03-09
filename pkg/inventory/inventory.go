@@ -11,7 +11,7 @@ type Key = trie.Key
 
 // System is a standin for anything we want to track
 type System struct {
-	Id   int // this is actually the stable primary key other databases would depend on
+	Id   Key // this is actually the stable primary key other databases would depend on
 	Data int
 }
 
@@ -25,8 +25,7 @@ type Inventory interface {
 // MemoryInventory just stores inventory in a map
 type MemoryInventory struct {
 	sync.RWMutex
-	Counter int
-	Store   map[Key]System
+	Store map[Key]System
 }
 
 func New() Inventory {
@@ -39,8 +38,7 @@ func (inv *MemoryInventory) Create(k Key, sys System) error {
 	inv.Lock()
 	defer inv.Unlock()
 	if _, found := inv.Store[k]; !found {
-		sys.Id = inv.Counter
-		inv.Counter += 1
+		sys.Id = k // we give the system in inventory the first key it was created with
 		inv.Store[k] = sys
 		return nil
 	}
