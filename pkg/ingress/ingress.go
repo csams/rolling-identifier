@@ -64,7 +64,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		Key:     k,
 		Receipt: receipt,
 	}
-	resp.Error = ing.Index.WithLongestPrefix(k, func(comps []trie.Key, pos IndexNode) error {
+	resp.Error = ing.Index.WithLongestPrefix(k, func(remainder []trie.Key, pos IndexNode) error {
 		var err error
 
 		// we need to make a new system
@@ -100,7 +100,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		// the client came back with a receipt
 		cameBack := func(r Receipt) {
 			fmt.Println("cameBack")
-			prevId := trie.TrimKeySuffix(k, trie.NewKey(comps))
+			prevId := trie.TrimKeySuffix(k, trie.NewKey(remainder))
 			payload, found, e := ing.S3.Get(r)
 			err = e
 			if found {
@@ -113,14 +113,14 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		// none of the system's history is in the index (the longest common prefix was empty)
 		if pos == ing.Index {
 			_, found := ing.Inventory.Get(k)
-			pos.Extend(comps, now)
+			pos.Extend(remainder, now)
 			if found { // the key is in inventory, though. Freshen the index and do a routine checkin.
 				checkIn(receipt)
 			} else { // it's not in the inventory either.. must be a new system.
 				newSystem(receipt)
 			}
 		} else { // at least part of its history is in the index
-			if len(comps) == 0 { // we found the entire key
+			if len(remainder) == 0 { // we found the entire key
 				if len(pos.Children) == 0 { // the node in the trie has no children, so it's an exact match
 					if time.Since(pos.Value).Seconds() < ing.EnoughSeconds { // it hasn't been long enough since we saw it last..
 						comeBack(receipt)
@@ -132,7 +132,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 					comeBack(receipt)
 				}
 			} else { // not all key components are found
-				pos.Extend(comps, now)
+				pos.Extend(remainder, now)
 				if len(pos.Children) == 0 { // the system was previously given a new id and told to come back
 					cameBack(req.Receipt)
 				} else { // we found a common prefix but have diverged - this is a clone.
