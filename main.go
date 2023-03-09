@@ -22,31 +22,31 @@ func main() {
 
 	ing := ingress.New(1, inv, index, store, announce)
 
-    req := ingress.Request {
-        Payload: inventory.System{},
-    }
+	req := ingress.Request{
+		Payload: inventory.System{},
+	}
 
-    resp := ing.CheckIn("1", req)
-    fmt.Printf("%+v\n", resp)
-    fmt.Printf("%s\n", index)
+	resp := ing.CheckIn("1", req)
+	fmt.Printf("%+v\n", resp)
+	fmt.Printf("%s\n", index)
 
-    resp = ing.CheckIn("1", req)
-    fmt.Printf("%+v\n", resp)
-    fmt.Printf("%s\n", index)
+	resp = ing.CheckIn("1", req)
+	fmt.Printf("%+v\n", resp)
+	fmt.Printf("%s\n", index)
 
-    if !resp.ComeBack {
-        fmt.Println("Expected a come back message")
-        return
-    }
+	if !resp.ComeBack {
+		fmt.Println("Expected a come back message")
+		return
+	}
 
-    // go back with the new key we were issued and the receipt
-    resp = ing.CheckIn(resp.Key, ingress.Request{ Receipt: resp.Receipt})
-    fmt.Printf("%+v\n", resp)
-    fmt.Printf("%s\n", index)
+	// go back with the new key we were issued and the receipt
+	resp = ing.CheckIn(resp.Key, ingress.Request{Receipt: resp.Receipt})
+	fmt.Printf("%+v\n", resp)
+	fmt.Printf("%s\n", index)
 
-    // go back again with the same key but delaying for 2 seconds so we're outside the window of suspicion.
-    time.Sleep(2 * time.Second)
-    resp = ing.CheckIn(resp.Key, ingress.Request{ Payload: inventory.System{}})
-    fmt.Printf("%+v\n", resp)
-    fmt.Printf("%s\n", index)
+	// go back again with the same key but delaying for 2 seconds so we're outside the window of suspicion.
+	time.Sleep(2 * time.Second)
+	resp = ing.CheckIn(resp.Key, ingress.Request{Payload: inventory.System{}})
+	fmt.Printf("%+v\n", resp)
+	fmt.Printf("%s\n", index)
 }
