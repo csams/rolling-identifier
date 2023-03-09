@@ -131,10 +131,11 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 					comeBack(receipt)
 				}
 			} else { // not all key components are found
-				pos.Extend(remainder, now)
 				if len(pos.Children) == 0 { // the system was previously given a new id and told to come back
+					pos.Extend(remainder, now)
 					cameBack(req.Receipt)
 				} else { // we found a common prefix but have diverged - this is a clone.
+					pos.Extend(remainder, now)
 					newSystem(req.Receipt)
 				}
 			}
