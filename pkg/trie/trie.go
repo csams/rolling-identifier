@@ -8,17 +8,17 @@ import (
 type Callback[V any] func([]Key, *Trie[V]) error
 
 type Key = string
-type Component = Key
+type KeyComponent = Key
 
 func ExtendKey(base, suffix Key) Key {
 	return strings.Join([]string{base, suffix}, ":")
 }
 
-func KeyComponents(k Key) []Component {
+func KeyComponents(k Key) []KeyComponent {
 	return strings.Split(k, ":")
 }
 
-func NewKey(comps []Component) Key {
+func NewKey(comps []KeyComponent) Key {
 	return strings.Join(comps, ":")
 }
 
@@ -85,7 +85,7 @@ func (t *Trie[V]) WithLongestPrefix(k Key, cb Callback[V]) error {
 }
 
 // Extend will extend the tree downward for each component and assign v to the last node.
-func (t *Trie[V]) Extend(comps []Component, v V) *Trie[V] {
+func (t *Trie[V]) Extend(comps []KeyComponent, v V) *Trie[V] {
 	cur := t
 	for _, c := range comps {
 		n := New[V]()

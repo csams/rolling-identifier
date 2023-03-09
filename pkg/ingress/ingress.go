@@ -69,10 +69,10 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		Key:     k,
 		Receipt: receipt,
 	}
-	resp.Error = ing.Index.WithLongestPrefix(k, func(remainder []trie.Key, pos IndexNode) error {
+	resp.Error = ing.Index.WithLongestPrefix(k, func(remainder []trie.KeyComponent, pos IndexNode) error {
 		var err error
 
-		// we need to make a new system
+		// make a new system
 		newSystem := func(r Receipt) {
 			fmt.Println("newSystem")
 			ing.Inventory.Create(k, req.Payload)
@@ -82,7 +82,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// regular old checkin
+		// regular checkin
 		checkIn := func(r Receipt) {
 			fmt.Println("checkIn")
 			ing.Inventory.Update(k, k, req.Payload)
@@ -92,21 +92,21 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to
-		// post it again.
+		// if we tell a client to come back, store the archive it sent so it doesn't have to post it again.
 		comeBack := func(r Receipt) {
 			fmt.Println("comeBack")
 			ing.S3.Put(r, req.Payload)
 
 			resp.ComeBack = true
-			// just reusing the storage receipt for convenience. Since we know the previous segments that have
-			// been issued as children of a given node, we could make these single bytes and still know
+
+			// just reusing the storage receipt for convenience. Since we know the previous KeyComponents that
+			// have been issued as children of a given node, we could make these single bytes and still know
 			// they're unique.
 			resp.Key = trie.ExtendKey(k, r)
 			resp.Receipt = r
 		}
 
-		// the client came back with a receipt
+		// the client came back with a receipt and didn't collide with any other system that checked in.
 		fastForward := func(r Receipt) {
 			fmt.Println("fastForward")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(remainder))
