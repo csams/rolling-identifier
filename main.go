@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/csams/rollingid/pkg/ingress"
-	"github.com/csams/rollingid/pkg/inventory"
-	"github.com/csams/rollingid/pkg/storage"
-	"github.com/csams/rollingid/pkg/trie"
+	"github.com/csams/rolling-identifier/pkg/ingress"
+	"github.com/csams/rolling-identifier/pkg/inventory"
+	"github.com/csams/rolling-identifier/pkg/storage"
+	"github.com/csams/rolling-identifier/pkg/trie"
 )
 
 func main() {

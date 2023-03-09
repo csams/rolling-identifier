@@ -1,4 +1,4 @@
-module github.com/csams/rollingid
+module github.com/csams/rolling-identifier
 
 go 1.19
 

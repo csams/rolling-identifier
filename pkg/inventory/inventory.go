@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/csams/rollingid/pkg/trie"
+	"github.com/csams/rolling-identifier/pkg/trie"
 )
 
 type Key = trie.Key
