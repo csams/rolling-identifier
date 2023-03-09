@@ -19,13 +19,18 @@ type Index = *trie.Trie[time.Time]
 type IndexNode = Index
 type Storage = storage.Storage[Payload]
 
-// Request contains either a payload or a Receipt. It shouldn't contain both.
+// Request contains either a payload or a Receipt. It shouldn't contain both. A payload is an archive or
+// something.
+//
+// A receipt is a token the client should provide if it was told to come back with a new id. It's an
+// optimization to prevent expensive re-uploads.
 type Request struct {
 	Payload inventory.System
 	Receipt Receipt
 }
 
-// Response tells the client whether it should update its local key and come back with the receipt
+// Response tells the client whether it should come back with the receipt. The client always should update its
+// local key to whatever is in the Response.
 type Response struct {
 	ComeBack bool
 	Receipt  Receipt
@@ -33,7 +38,7 @@ type Response struct {
 	Error    error
 }
 
-// Ingress is what a client would use to check in, providing its current key and a request
+// Ingress is used by clients to check in.
 type Ingress interface {
 	CheckIn(trie.Key, Request) Response
 }
@@ -87,13 +92,17 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to post it again
+		// if we tell a client to come back, we go ahead and store the archive it sent so it doesn't have to
+		// post it again.
 		comeBack := func(r Receipt) {
 			fmt.Println("comeBack")
 			ing.S3.Put(r, req.Payload)
 
 			resp.ComeBack = true
-			resp.Key = trie.ExtendKey(k, r) // just reusing the storage receipt - could be anything unique
+			// just reusing the storage receipt for convenience. Since we know the previous segments that have
+			// been issued as children of a given node, we could make these single bytes and still know
+			// they're unique.
+			resp.Key = trie.ExtendKey(k, r)
 			resp.Receipt = r
 		}
 
@@ -101,6 +110,8 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 		cameBack := func(r Receipt) {
 			fmt.Println("cameBack")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(remainder))
+
+			// get the previously sent payload from storage
 			payload, found, e := ing.S3.Get(r)
 			err = e
 			if found {

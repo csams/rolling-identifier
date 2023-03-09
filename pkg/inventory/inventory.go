@@ -8,10 +8,11 @@ import (
 )
 
 type Key = trie.Key
+type PrimaryKey = Key
 
 // System is a standin for anything we want to track
 type System struct {
-	Id   Key // this is actually the stable primary key other databases would depend on
+	Id   PrimaryKey // this is actually the stable primary key other databases would depend on
 	Data int
 }
 
