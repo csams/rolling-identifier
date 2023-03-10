@@ -82,7 +82,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// regular checkin
+		// perform regular checkin
 		checkIn := func(r Receipt) {
 			fmt.Println("checkIn")
 			ing.Inventory.Update(k, k, req.Payload)
@@ -92,7 +92,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// if we tell a client to come back, store the archive it sent so it doesn't have to post it again.
+		// tell the client to come back. store the archive it sent so it doesn't have to post it again.
 		comeBack := func(r Receipt) {
 			fmt.Println("comeBack")
 			ing.S3.Put(r, req.Payload)
@@ -106,7 +106,7 @@ func (ing *IngressImpl) CheckIn(k trie.Key, req Request) Response {
 			resp.Receipt = r
 		}
 
-		// the client came back with a receipt and didn't collide with any other system that checked in.
+		// the client came back with a receipt and didn't collide with any other client that checked in while it was away.
 		fastForward := func(r Receipt) {
 			fmt.Println("fastForward")
 			prevId := trie.TrimKeySuffix(k, trie.NewKey(remainder))
